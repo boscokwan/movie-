@@ -30,6 +30,9 @@ def login():
         password = request.form['password']
         encrypted_password = hashlib.sha256(password.encode()).hexdigest()
 
+        print(request.form['email'])
+        print(encrypted_password)
+
         with create_connection() as connection:
             with connection.cursor() as cursor:
                 sql = "SELECT * FROM users WHERE email=%s AND password=%s"
@@ -39,11 +42,12 @@ def login():
                 )
                 cursor.execute(sql, values)
                 result = cursor.fetchone()
+                print(result)
         if result:
             session['logged_in'] = True
             session['first_name'] = result['first_name']
             session['role'] = result['role']
-            session['id'] = result['id']
+            session['users_id'] = result['users_id']
             return redirect("/dashboard")
         else:
             flash("Invalid username or password.")
@@ -100,11 +104,13 @@ def list_users():
             result = cursor.fetchall()
     return render_template('users_list.html', result=result)
 
+
+
 @app.route('/view')
 def view_user():
     with create_connection() as connection:
         with connection.cursor() as cursor:
-            cursor.execute("SELECT * FROM users WHERE id=%s", request.args['id'])
+            cursor.execute("SELECT * FROM users WHERE id=%s", request.args['users_id'])
             result = cursor.fetchone()
     return render_template('users_view.html', result=result)
 
@@ -112,16 +118,16 @@ def view_user():
 def delete_user():
     with create_connection() as connection:
         with connection.cursor() as cursor:
-            cursor.execute("DELETE FROM users WHERE id=%s", request.args['id'])
+            cursor.execute("DELETE FROM users WHERE id=%s", request.args['users_id'])
             connection.commit()
     return redirect('/dashboard')
 
 @app.route('/edit', methods=['GET', 'POST'])
 def edit_user():
     # Admin are allowed, users with the right id are allowed, everyone else sees 404.
-    if session['role'] != 'admin' and str(session['id']) != request.args['id']:
+    if session['role'] != 'admin' and str(session['users_id']) != request.args['users_id']:
         flash("You don't have permission to edit this user.")
-        return redirect('/view?id=' + request.args['id'])
+        return redirect('/view?id=' + request.args['users_id'])
 
     if request.method == 'POST':
         if request.files['avatar'].filename:
@@ -149,15 +155,15 @@ def edit_user():
                     request.form['last_name'],
                     request.form['email'],
                     avatar_filename,
-                    request.form['id']
+                    request.form['users_id']
                 )
                 cursor.execute(sql, values)
                 connection.commit()
-        return redirect('/view?id=' + request.form['id'])
+        return redirect('/view?id=' + request.form['users_id'])
     else:
         with create_connection() as connection:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM users WHERE id = %s", request.args['id'])
+                cursor.execute("SELECT * FROM users WHERE id = %s", request.args['users_id'])
                 result = cursor.fetchone()
         return render_template('users_edit.html', result=result)
 

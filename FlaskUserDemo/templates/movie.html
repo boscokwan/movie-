@@ -1,0 +1,10 @@
+{% extends 'layout_html' %}
+{% block title %}Movies{% endblock % }
+{% block content %}
+<table>
+    <tr><th>Movie name</th></tr>
+    {% for row in result %}
+    <tr><th>{{row.title}}</th></tr>
+    {% endfor %}
+</table>
+{% endblock %}
